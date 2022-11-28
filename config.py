@@ -1,0 +1,1 @@
+BOT_TOKEN = "5334249387:AAFyuyjEDrB4r0426VOIb3tyFwxJr-b4tIc"  #@TestTask1337_bot
