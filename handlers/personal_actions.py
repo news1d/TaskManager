@@ -18,8 +18,6 @@ class Form(StatesGroup):
     description = State()
     deadline = State()
     del_name = State()
-    fin_spent = State()
-    fin_earned = State()
 
 
 # стартовый метод
@@ -119,66 +117,6 @@ async def main_handler(message: types.Message):
         else:
             await message.reply("Задач не обнаружено!")
 
-    # -------------------Финансовый менеджер------------------->
-    elif message.text == '📊 Финансовый менеджер':
-        await message.bot.send_message(message.from_user.id, 'Меню финансового менеджера', reply_markup=nav.finMenu)
-
-    elif message.text == '📉 Внести расходы':
-        await Form.fin_spent.set()
-        await message.answer("Введите число: ", reply_markup=nav.canMenu)
-
-    elif message.text == '📈 Внести доходы':
-        await Form.fin_earned.set()
-        await message.answer("Введите число: ", reply_markup=nav.canMenu)
-
-    elif message.text == '🗂 История':
-        await message.bot.send_message(message.from_user.id, 'Выберите подходящий период', reply_markup=nav.hisMenu)
-
-    elif message.text == '🔄 Назад':
-        await message.bot.send_message(message.from_user.id, 'Вы вернулись в меню финансового менеджера',
-                                       reply_markup=nav.finMenu)
-
-    elif message.text == '1️⃣ День' or message.text == '7️⃣ Неделя' or message.text == '🔢 Месяц':
-
-        if message.text == '1️⃣ День':
-            within = 'day'
-        elif message.text == '7️⃣ Неделя':
-            within = 'week'
-        elif message.text == '🔢 Месяц':
-            within = 'month'
-
-        records = BotDB.get_records(message.from_user.id, within)
-
-        total_earned = 0
-        total_spent = 0
-
-        if len(records):
-            if within == 'day':
-                answer = f"🕘 История операций за день:\n\n"
-            elif within == 'week':
-                answer = f"🕘 История операций за неделю:\n\n"
-            elif within == 'month':
-                answer = f"🕘 История операций за месяц:\n\n"
-
-            for r in records:
-                answer += "<b>" + ("➖ Расход" if not r[2] else "➕ Доход") + "</b>"
-                answer += f" - {r[3]}"
-                answer += f" <i>({r[4]})</i>\n"
-                if r[2]:
-                    total_earned += r[3]
-                else:
-                    total_spent += r[3]
-
-            answer += f'\n📈 <b>Общий доход:</b> {total_earned}\n📉 <b>Общий расход:</b> {total_spent}'
-
-            await message.answer(answer)
-        else:
-            await message.reply("Записей не обнаружено!")
-
-    else:
-        await message.reply("Я не знаю такой команды...")
-
-
 # добавляем возможность отмены, если пользователь передумал
 @dp.message_handler(commands='cancel')
 @dp.message_handler(Text(equals='❌ отмена', ignore_case=True), state='*')
@@ -189,46 +127,6 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 
     await state.finish()
     await message.reply('Действие отменено!', reply_markup=nav.mainMenu)
-
-
-@dp.message_handler(state=Form.fin_spent)
-async def process_fin_spent(message: types.Message, state: FSMContext):
-    operation = '-'
-    value = message.text
-    if len(value):
-        x = re.findall(r"\d+(?:.\d+)?", value)
-        if len(x):
-            value = float(x[0].replace(',', '.'))
-
-            BotDB.add_record(message.from_user.id, operation, value)
-
-            await message.reply("✅ Запись о <u><b>расходе</b></u> успешно внесена!", reply_markup=nav.finMenu)
-
-        else:
-            await message.reply("Не удалось определить сумму!", reply_markup=nav.finMenu)
-    else:
-        await message.reply("Не введена сумма!", reply_markup=nav.finMenu)
-    await state.finish()
-
-
-@dp.message_handler(state=Form.fin_earned)
-async def process_fin_earned(message: types.Message, state: FSMContext):
-    operation = '+'
-    value = message.text
-    if len(value):
-        x = re.findall(r"\d+(?:.\d+)?", value)
-        if len(x):
-            value = float(x[0].replace(',', '.'))
-
-            BotDB.add_record(message.from_user.id, operation, value)
-
-            await message.reply("✅ Запись о <u><b>доходе</b></u> успешно внесена!", reply_markup=nav.finMenu)
-        else:
-            await message.reply("Не удалось определить сумму!", reply_markup=nav.finMenu)
-    else:
-        await message.reply("Не введена сумма!", reply_markup=nav.finMenu)
-    await state.finish()
-
 
 # TASK MANAGER --->
 @dp.message_handler(state=Form.task_name)
